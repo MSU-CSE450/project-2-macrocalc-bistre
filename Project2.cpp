@@ -39,16 +39,19 @@ private:
   }
 
   ASTNode ParseScope() {
+    ExpectToken(Lexer::ID_SCOPE_Start);
     ASTNode scope{ASTNode::SCOPE};
     table.PushScope();
-    while (ConsumeToken() != Lexer::ID_SCOPE_END) {
+    while (CurToken() != Lexer::ID_SCOPE_END) {
       scope.AddChild(ParseStatement());
     }
+    ConsumeToken();
     table.PopScope();
     return scope;
   }
 
   ASTNode ParseDecl() {
+    ExpectToken(Lexer::ID_VAR);
     Token const &ident = ExpectToken(Lexer::ID_ID);
     if (IfToken(Lexer::ID_ENDLINE)) {
       table.AddVar(ident.lexeme, ident.line_id);
@@ -69,6 +72,16 @@ private:
     return out;
   }
 
+  ASTNode ParseAssign(){
+    Token new_id = ExpectToken(Lexer::ID_ID);
+    ExpectToken(Lexer::ID_ASSIGN);
+    ASTNode node = ASTNode{ASTNode::ASSIGN};
+    size_t var_id = table.FindVar(new_id.lexeme, new_id.line_id);
+    node.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &new_id), ParseExpr());
+    ExpectToken(Lexer::ID_ENDLINE);
+    return node;
+  }
+
   ASTNode ParseExpr() {
     // stub expression handler for now, only works for literals and idents
     if (auto token = IfToken(Lexer::ID_NUMBER)) {
@@ -84,6 +97,7 @@ private:
   }
 
   ASTNode ParsePrint() {
+    ExpectToken(Lexer::ID_PRINT);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node{ASTNode::PRINT};
     if (auto current = IfToken(Lexer::ID_STRING)) {
@@ -122,15 +136,36 @@ private:
     return node;
   }
 
+  ASTNode ParseWhile(){
+    ExpectToken(Lexer::ID_WHILE);
+    ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
+    ASTNode node = ASTNode(ASTNode::WHILE);
+    //hack to get around dealing with expressions
+    //but still be able to do some basic testing
+    if (CurToken() == Lexer::ID_ID){
+      Token id = ConsumeToken();
+      node.AddChild(ASTNode(ASTNode::IDENTIFIER, table.FindVar(id.lexeme, id.line_id), &id));
+    } else {
+      node.AddChild(ParseExpr());
+    }
+    ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+    node.AddChild(ParseStatement());
+    return node;
+  }
+
   ASTNode ParseStatement() {
-    Token const &current = ConsumeToken();
+    Token const &current = CurToken();
     switch (current) {
     case Lexer::ID_SCOPE_Start:
       return ParseScope();
     case Lexer::ID_VAR:
       return ParseDecl();
+    case Lexer::ID_ID:
+      return ParseAssign();
     case Lexer::ID_PRINT:
       return ParsePrint();
+    case Lexer::ID_WHILE:
+      return ParseWhile();
     default:
       ErrorUnexpected(current);
     }

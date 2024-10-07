@@ -23,6 +23,7 @@ public:
     CONDITIONAL,
     OPERATION,
     NUMBER,
+    WHILE,
     STRING
   };
   const Type type;
@@ -77,6 +78,9 @@ public:
       return RunOperation(symbols);
     case NUMBER:
       return value;
+    case WHILE:
+      RunWhile(symbols);
+      return std::nullopt;
     default:
       assert(false);
       return std::nullopt; // rose: thank you gcc very cool
@@ -138,5 +142,16 @@ public:
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
     return 0;
+  }
+  void RunWhile(SymbolTable & symbols){
+    assert(children.size() == 2);
+    assert(value == double{});
+    assert(literal == std::string{});
+
+    ASTNode condition = children[0];
+    ASTNode body = children[1];
+    while (condition.RunExpect(symbols)){
+      body.Run(symbols);
+    }
   }
 };
