@@ -122,6 +122,36 @@ private:
     return node;
   }
 
+  ASTNode ParseIF() {
+    std::cout << "If statment" << std::endl;
+    ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
+    std::cout << "Open paran" << std::endl;
+
+    if (CurToken() == Lexer::ID_CLOSE_PARENTHESIS){ 
+      // Add some error
+    }
+
+    ASTNode node{ASTNode::CONDITIONAL};
+
+    ASTNode condition = ParseExpr();
+
+    node.AddChild(condition);
+
+    ExpectToken(Lexer::ID_SCOPE_Start);
+    node.AddChild(ParseScope());
+    ExpectToken(Lexer::ID_SCOPE_END);
+
+    if(CurToken() != Lexer::ID_ELSE){
+      return node;
+    }
+
+    ExpectToken(Lexer::ID_SCOPE_Start);
+    node.AddChild(ParseScope());
+    ExpectToken(Lexer::ID_SCOPE_END);
+
+    return node;
+  }
+
   ASTNode ParseStatement() {
     Token const &current = ConsumeToken();
     switch (current) {
@@ -131,6 +161,8 @@ private:
       return ParseDecl();
     case Lexer::ID_PRINT:
       return ParsePrint();
+    case Lexer::ID_IF:
+      return ParseIF();
     default:
       ErrorUnexpected(current);
     }
