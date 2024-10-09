@@ -22,14 +22,25 @@ private:
 
   emplex2::StringLexer string_lexer{};
 
-  Token const &CurToken() const { return tokens.at(token_idx); }
-  Token const &ConsumeToken() { return tokens.at(token_idx++); }
+  Token const &CurToken() const {
+    if (token_idx >= tokens.size())
+      ErrorNoLine("Unexpected EOF");
+    return tokens.at(token_idx);
+  }
+
+  Token const &ConsumeToken() {
+    if (token_idx >= tokens.size())
+      ErrorNoLine("Unexpected EOF");
+    return tokens.at(token_idx++);
+  }
+
   Token const &ExpectToken(int token) {
     if (CurToken() == token) {
       return ConsumeToken();
     }
     ErrorUnexpected(CurToken(), token);
   }
+
   // rose: C++ optionals can't hold references, grumble grumble
   Token const *IfToken(int token) {
     if (CurToken() == token) {
@@ -72,12 +83,13 @@ private:
     return out;
   }
 
-  ASTNode ParseAssign(){
+  ASTNode ParseAssign() {
     Token new_id = ExpectToken(Lexer::ID_ID);
     ExpectToken(Lexer::ID_ASSIGN);
     ASTNode node = ASTNode{ASTNode::ASSIGN};
     size_t var_id = table.FindVar(new_id.lexeme, new_id.line_id);
-    node.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &new_id), ParseExpr());
+    node.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &new_id),
+                     ParseExpr());
     ExpectToken(Lexer::ID_ENDLINE);
     return node;
   }
@@ -136,15 +148,16 @@ private:
     return node;
   }
 
-  ASTNode ParseWhile(){
+  ASTNode ParseWhile() {
     ExpectToken(Lexer::ID_WHILE);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
     ASTNode node = ASTNode(ASTNode::WHILE);
-    //hack to get around dealing with expressions
-    //but still be able to do some basic testing
-    if (CurToken() == Lexer::ID_ID){
+    // hack to get around dealing with expressions
+    // but still be able to do some basic testing
+    if (CurToken() == Lexer::ID_ID) {
       Token id = ConsumeToken();
-      node.AddChild(ASTNode(ASTNode::IDENTIFIER, table.FindVar(id.lexeme, id.line_id), &id));
+      node.AddChild(ASTNode(ASTNode::IDENTIFIER,
+                            table.FindVar(id.lexeme, id.line_id), &id));
     } else {
       node.AddChild(ParseExpr());
     }
