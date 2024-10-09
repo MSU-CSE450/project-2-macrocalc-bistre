@@ -143,6 +143,10 @@ public:
       return;
     }
 
+    if (children.size() < 3){
+      return;
+    }
+
     curr_idx += 1;
     children[curr_idx].Run(symbols);
   }
