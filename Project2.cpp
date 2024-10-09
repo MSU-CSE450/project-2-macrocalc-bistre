@@ -141,6 +141,8 @@ private:
       return node;
     }
 
+    ConsumeToken();
+
     node.AddChild(ParseStatement());
 
     return node;
