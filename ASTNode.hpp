@@ -137,11 +137,14 @@ public:
     size_t curr_idx{0};
     double condition = children[curr_idx].RunExpect(symbols);
 
-    if (condition == 1.0) {
+    curr_idx += 1;
+    if (condition != 0) {
       children[curr_idx].Run(symbols);
-    } else if (children.size() == 3) {
-      children[curr_idx].Run(symbols);
+      return;
     }
+
+    curr_idx += 1;
+    children[curr_idx].Run(symbols);
   }
   double RunOperation([[maybe_unused]] SymbolTable &symbols) {
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe

@@ -137,6 +137,17 @@ private:
 
     node.AddChild(condition);
 
+    if (CurToken() != Lexer::ID_SCOPE_Start){
+      node.AddChild(ParseStatement());
+
+      if(CurToken() != Lexer::ID_ELSE){
+        return node;
+      }
+
+      node.AddChild(ParseStatement());
+      return node;
+    }
+
     ExpectToken(Lexer::ID_SCOPE_Start);
     node.AddChild(ParseScope());
     ExpectToken(Lexer::ID_SCOPE_END);
