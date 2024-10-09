@@ -39,11 +39,13 @@ private:
   }
 
   ASTNode ParseScope() {
+    // ExpectToken(Lexer::ID_SCOPE_Start);
     ASTNode scope{ASTNode::SCOPE};
     table.PushScope();
-    while (ConsumeToken() != Lexer::ID_SCOPE_END) {
+    while (CurToken() != Lexer::ID_SCOPE_END) {
       scope.AddChild(ParseStatement());
     }
+    ConsumeToken();
     table.PopScope();
     return scope;
   }
@@ -134,6 +136,8 @@ private:
     ASTNode condition = ParseExpr();
 
     node.AddChild(condition);
+
+    ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
 
     node.AddChild(ParseStatement());
 
