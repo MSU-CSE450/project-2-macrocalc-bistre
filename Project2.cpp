@@ -141,14 +141,10 @@ private:
 
     node.AddChild(ParseStatement());
 
-    if(CurToken() != Lexer::ID_ELSE){
-      return node;
+    if (IfToken(Lexer::ID_ELSE)) {
+      node.AddChild(ParseStatement());
     }
-
-    ConsumeToken();
-
-    node.AddChild(ParseStatement());
-
+    
     return node;
   }
 
