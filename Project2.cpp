@@ -53,9 +53,11 @@ private:
     ExpectToken(Lexer::ID_SCOPE_Start);
     ASTNode scope{ASTNode::SCOPE};
     table.PushScope();
+
     while (CurToken() != Lexer::ID_SCOPE_END) {
       scope.AddChild(ParseStatement());
     }
+    ConsumeToken();
     ConsumeToken();
     table.PopScope();
     return scope;
@@ -148,6 +150,28 @@ private:
     return node;
   }
 
+  ASTNode ParseIF() {
+    ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
+
+    if (CurToken() == Lexer::ID_CLOSE_PARENTHESIS){ 
+      Error(CurToken(), "Expected condition body, found empty condition");
+    }
+
+    ASTNode node{ASTNode::CONDITIONAL};
+
+    node.AddChild(ParseExpr());
+
+    ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+
+    node.AddChild(ParseStatement());
+
+    if (IfToken(Lexer::ID_ELSE)) {
+      node.AddChild(ParseStatement());
+    }
+    
+    return node;
+  }
+
   ASTNode ParseWhile() {
     ExpectToken(Lexer::ID_WHILE);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
@@ -177,8 +201,6 @@ private:
       return ParseAssign();
     case Lexer::ID_PRINT:
       return ParsePrint();
-    case Lexer::ID_WHILE:
-      return ParseWhile();
     default:
       ErrorUnexpected(current);
     }

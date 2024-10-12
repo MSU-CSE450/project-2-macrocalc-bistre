@@ -130,12 +130,26 @@ public:
 
     return symbols.GetValue(var_id, token);
   }
-  void RunConditional([[maybe_unused]] SymbolTable &symbols) {
+  void RunConditional(SymbolTable &symbols) {
     // conditional statement is of the form "if (expression1) statment1 else
     // statement2" so a conditional node should have 2 or 3 children: an
     // expression, a statement, and possibly another statement run the first
     // one; if it gives a nonzero value, run the second; otherwise, run the
     // third, if it exists
+    assert(children.size() == 2 || children.size() == 3);
+
+    double condition = children[0].RunExpect(symbols);
+
+    if (condition != 0) {
+      children[1].Run(symbols);
+      return;
+    }
+
+    if (children.size() < 3){
+      return;
+    }
+
+    children[2].Run(symbols);
   }
   double RunOperation([[maybe_unused]] SymbolTable &symbols) {
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe
