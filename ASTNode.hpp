@@ -141,14 +141,14 @@ public:
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
-    if (literal == "!" || literal == "-"){
-      assert(children.size() == 1);
-      double left = children[0].RunExpect(symbols);
-      if (literal == "!"){
-        return left == 0 ? 1 : 0;
-      } else {
-        return -1 * left;
-      }
+    assert(children.size() == 1);
+    double left = children[0].RunExpect(symbols);
+    if (literal == "!"){
+      return left == 0 ? 1 : 0;
+    }
+    if (literal == "-"){
+      return -1 * left;
+    }
     } else {
       assert(children.size() == 2);
       double left = children[0].RunExpect(symbols);
