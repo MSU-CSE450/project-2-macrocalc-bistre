@@ -128,7 +128,7 @@ private:
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
 
     if (CurToken() == Lexer::ID_CLOSE_PARENTHESIS){ 
-      // Add some error
+      Error(CurToken(), "Expected condition body, found empty condition");
     }
 
     ASTNode node{ASTNode::CONDITIONAL};
