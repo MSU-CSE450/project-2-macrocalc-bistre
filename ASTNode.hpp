@@ -39,6 +39,8 @@ public:
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
+  ASTNode(Type type, ASTNode child1, ASTNode child2)
+      : type(type) { AddChild(child1); AddChild(child2); }
 
   operator int() const { return type; }
 
