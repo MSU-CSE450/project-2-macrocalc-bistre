@@ -134,12 +134,10 @@ public:
     // third, if it exists
     assert(children.size() == 2 || children.size() == 3);
 
-    size_t curr_idx{0};
-    double condition = children[curr_idx].RunExpect(symbols);
+    double condition = children[0].RunExpect(symbols);
 
-    curr_idx += 1;
     if (condition != 0) {
-      children[curr_idx].Run(symbols);
+      children[1].Run(symbols);
       return;
     }
 
@@ -147,8 +145,7 @@ public:
       return;
     }
 
-    curr_idx += 1;
-    children[curr_idx].Run(symbols);
+    children[2].Run(symbols);
   }
   double RunOperation([[maybe_unused]] SymbolTable &symbols) {
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe
