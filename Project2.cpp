@@ -96,17 +96,40 @@ private:
   }
 
   ASTNode ParseExpr() {
-    // stub expression handler for now, only works for literals and idents
-    if (auto token = IfToken(Lexer::ID_NUMBER)) {
-      return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
-    }
+    // // stub expression handler for now, only works for literals and idents
+    // if (auto token = IfToken(Lexer::ID_NUMBER)) {
+    //   return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
+    // }
 
-    if (auto token = IfToken(Lexer::ID_ID)) {
-      return ASTNode(ASTNode::IDENTIFIER,
-                     table.FindVar(token->lexeme, token->line_id), token);
-    }
+    // if (auto token = IfToken(Lexer::ID_ID)) {
+    //   return ASTNode(ASTNode::IDENTIFIER,
+    //                  table.FindVar(token->lexeme, token->line_id), token);
+    // }
 
-    ErrorUnexpected(CurToken(), Lexer::ID_ID, Lexer::ID_NUMBER);
+    // ErrorUnexpected(CurToken(), Lexer::ID_ID, Lexer::ID_NUMBER);
+    return ParseEqalSign();
+  }
+
+  ASTNode ParseEqalSign(){
+    ASTNode lhs = ParseExpressionOr();
+    if (IfToken('=')) {
+      ASTNode rhs = ParseEqalSign();  // Right associative.
+      return ASTNode(ASTNode::ASSIGN, lhs, rhs);
+    }
+    return lhs;
+  }
+
+  ASTNode ParseExpressionOr() {
+    ASTNode lhs = ParseExpressionAnd();
+    if (IfToken('||')) {
+      ASTNode rhs = ParseExpressionOr();
+      return ASTNode(ASTNode::ASSIGN, lhs, rhs);
+    }
+    return lhs;
+  }
+
+  ASTNode ParseExpressionAnd() {
+    ASTNode lhs = ParseExpressionAnd();
   }
 
   ASTNode ParsePrint() {
