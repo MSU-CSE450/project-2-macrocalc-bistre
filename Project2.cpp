@@ -133,9 +133,7 @@ private:
 
     ASTNode node{ASTNode::CONDITIONAL};
 
-    ASTNode condition = ParseExpr();
-
-    node.AddChild(condition);
+    node.AddChild(ParseExpr());
 
     ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
 
