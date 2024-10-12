@@ -201,6 +201,10 @@ private:
       return ParseAssign();
     case Lexer::ID_PRINT:
       return ParsePrint();
+    case Lexer::ID_IF:
+      return ParseIF();
+    case Lexer::ID_WHILE:
+      return ParseWhile();
     default:
       ErrorUnexpected(current);
     }
