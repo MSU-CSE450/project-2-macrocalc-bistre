@@ -141,7 +141,7 @@ public:
     // node will have an operator (e.g. +, *, etc.) specified somewhere (maybe
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
-    assert(children.size() == 1);
+    assert(children.size() >= 1);
     double left = children[0].RunExpect(symbols);
     if (literal == "!"){
       return left == 0 ? 1 : 0;
@@ -149,51 +149,48 @@ public:
     if (literal == "-"){
       return -1 * left;
     }
+    assert(children.size() == 2);
+    if (literal == "&&"){
+      if (!left) return 0; //short-circuit when left is false
+      return children[1].RunExpect(symbols) != 0;
+    } else if (literal == "||"){
+      if (left) return 1; //short-circuit when left is true
+      return children[1].RunExpect(symbols) != 0;
+    }
+    //don't evaluate the right until you know you won't have to short-circuit
+    double right = children[1].RunExpect(symbols);
+    if (literal == "**"){
+      return std::pow(left, right);
+    } else if (literal == "*") {
+      return left * right;
+    } else if (literal == "/"){
+      if (right == 0){
+        throw std::runtime_error("Division by zero");
+      }
+      return left / right;
+    } else if (literal == "%"){
+      if (right == 0){
+        throw std::runtime_error("Modulus by zero");
+      }
+      return static_cast<int>(left) % static_cast<int>(right);
+    } else if (literal == "+"){
+      return left + right;
+    } else if (literal == "-"){
+      return left - right;
+    } else if (literal == "<"){
+      return left < right;
+    } else if (literal == ">"){
+      return left > right;
+    } else if (literal == "<="){
+      return left <= right;
+    } else if (literal == ">=") {
+      return left >= right;
+    } else if (literal == "=="){
+      return left == right;
+    } else if (literal == "!="){
+      return left != right;
     } else {
-      assert(children.size() == 2);
-      double left = children[0].RunExpect(symbols);
-      if (literal == "&&"){
-        if (!left) return 0; //short-circuit when left is false
-        return children[1].RunExpect(symbols) != 0;
-      } else if (literal == "||"){
-        if (left) return 1; //short-circuit when left is true
-        return children[1].RunExpect(symbols) != 0;
-      }
-      //don't evaluate the right until you know you won't have to short-circuit
-      double right = children[1].RunExpect(symbols);
-      if (literal == "**"){
-        return pow(left, right);
-      } else if (literal == "*") {
-        return left * right;
-      } else if (literal == "/"){
-        if (right == 0){
-          throw std::runtime_error("Division by zero");
-        }
-        return left / right;
-      } else if (literal == "%"){
-        if (right == 0){
-          throw std::runtime_error("Modulus by zero");
-        }
-        return int(left) % int(right);
-      } else if (literal == "+"){
-        return left + right;
-      } else if (literal == "-"){
-        return left - right;
-      } else if (literal == "<"){
-        return left < right;
-      } else if (literal == ">"){
-        return left > right;
-      } else if (literal == "<="){
-        return left <= right;
-      } else if (literal == ">=") {
-        return left >= right;
-      } else if (literal == "=="){
-        return left == right;
-      } else if (literal == "!="){
-        return left != right;
-      } else {
-        throw std::runtime_error("Tried to run unknown operator");
-      }
+      throw std::runtime_error("Tried to run unknown operator");
     }
   }
   void RunWhile(SymbolTable & symbols){
