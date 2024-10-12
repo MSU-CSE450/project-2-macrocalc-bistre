@@ -150,6 +150,7 @@ private:
   }
 
   ASTNode ParseIF() {
+    ExpectToken(Lexer::ID_IF);
     ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
 
     if (CurToken() == Lexer::ID_CLOSE_PARENTHESIS){ 
