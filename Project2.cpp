@@ -58,7 +58,7 @@ private:
       scope.AddChild(ParseStatement());
     }
     ConsumeToken();
-    ConsumeToken();
+    //ConsumeToken();
     table.PopScope();
     return scope;
   }
