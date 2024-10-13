@@ -74,8 +74,7 @@ public:
       RunPrint(symbols);
       return std::nullopt;
     case ASSIGN:
-      RunAssign(symbols);
-      return std::nullopt;
+      return RunAssign(symbols);
     case IDENTIFIER:
       return RunIdentifier(symbols);
     case CONDITIONAL:
@@ -127,9 +126,11 @@ public:
     }
     std::cout << std::endl;
   }
-  void RunAssign(SymbolTable &symbols) {
+  double RunAssign(SymbolTable &symbols) {
     assert(children.size() == 2);
-    symbols.SetValue(children.at(0).var_id, children.at(1).RunExpect(symbols));
+    double rvalue = children.at(1).RunExpect(symbols);
+    symbols.SetValue(children.at(0).var_id, rvalue);
+    return rvalue;
   }
   double RunIdentifier(SymbolTable &symbols) {
     assert(value == double{});
@@ -163,7 +164,7 @@ public:
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
     assert(children.size() >= 1);
-    double left = children[0].RunExpect(symbols);
+    double left = children.at(0).RunExpect(symbols);
     if (literal == "!"){
       return left == 0 ? 1 : 0;
     }
@@ -179,7 +180,7 @@ public:
       return children[1].RunExpect(symbols) != 0;
     }
     //don't evaluate the right until you know you won't have to short-circuit
-    double right = children[1].RunExpect(symbols);
+    double right = children.at(1).RunExpect(symbols);
     if (literal == "**"){
       return std::pow(left, right);
     } else if (literal == "*") {
@@ -211,7 +212,9 @@ public:
     } else if (literal == "!="){
       return left != right;
     } else {
-      throw std::runtime_error("Tried to run unknown operator");
+      std::string message = "Tried to run unknown operator ";
+      message.append(literal);
+      throw std::runtime_error(message);
     }
   }
   void RunWhile(SymbolTable & symbols){
