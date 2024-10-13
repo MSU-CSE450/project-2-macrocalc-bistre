@@ -43,11 +43,11 @@ public:
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
-  ASTNode(Type type, std::string literal, ASTNode &&left_child,
-          ASTNode &&right_child)
+
+  template <typename... Ts>
+  ASTNode(Type type, std::string literal, Ts &&...children)
       : type(type), literal(literal) {
-    AddChildren(std::forward<ASTNode>(left_child),
-                std::forward<ASTNode>(right_child));
+    AddChildren(std::forward<Ts>(children)...);
   }
 
   operator int() const { return type; }
