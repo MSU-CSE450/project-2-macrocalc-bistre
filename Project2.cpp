@@ -179,6 +179,12 @@ private:
     return lhs;
   }
 
+  ASTNode ParseNegate(){
+    auto lhs = std::make_unique<ASTNode>(ASTNode::NUMBER, -1);
+    auto rhs = ParseTerm();
+    return ASTNode(ASTNode::OPERATION, "*", std::move(*lhs), std::move(rhs));
+  }
+
   ASTNode ParseTerm() {
     Token const &current = CurToken();
     switch (current) {
@@ -194,6 +200,12 @@ private:
       ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
       return subexpression;
     }
+    case Lexer::ID_MATH:
+      if (current.lexeme == "-") {
+        ConsumeToken();
+        return ParseNegate();
+      }
+      ErrorUnexpected(current);
     default:
       ErrorUnexpected(current);
     }
