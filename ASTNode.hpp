@@ -26,7 +26,7 @@ public:
     WHILE,
     STRING
   };
-  //NOTE TO SELF- MAKE CONST 
+  // NOTE TO SELF- MAKE CONST
   Type type;
   double value{};
   size_t var_id{};
@@ -40,8 +40,9 @@ public:
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
-  ASTNode (Type type, std::string literal, ASTNode left_child, ASTNode right_child)
-  : type(type), literal(literal){
+  ASTNode(Type type, std::string literal, ASTNode left_child,
+          ASTNode right_child)
+      : type(type), literal(literal) {
     AddChildren(left_child, right_child);
   }
 
@@ -60,8 +61,6 @@ public:
   }
 
   template <typename T> void AddChildren(T node) { AddChild(node); }
-
-
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
@@ -153,7 +152,7 @@ public:
       return;
     }
 
-    if (children.size() < 3){
+    if (children.size() < 3) {
       return;
     }
 
@@ -165,51 +164,53 @@ public:
     // apply the operator to the returned value(s), then return the result
     assert(children.size() >= 1);
     double left = children.at(0).RunExpect(symbols);
-    if (literal == "!"){
+    if (literal == "!") {
       return left == 0 ? 1 : 0;
     }
-    if (literal == "-" && children.size() == 1){
+    if (literal == "-" && children.size() == 1) {
       return -1 * left;
     }
     assert(children.size() == 2);
-    if (literal == "&&"){
-      if (!left) return 0; //short-circuit when left is false
+    if (literal == "&&") {
+      if (!left)
+        return 0; // short-circuit when left is false
       return children[1].RunExpect(symbols) != 0;
-    } else if (literal == "||"){
-      if (left) return 1; //short-circuit when left is true
+    } else if (literal == "||") {
+      if (left)
+        return 1; // short-circuit when left is true
       return children[1].RunExpect(symbols) != 0;
     }
-    //don't evaluate the right until you know you won't have to short-circuit
+    // don't evaluate the right until you know you won't have to short-circuit
     double right = children.at(1).RunExpect(symbols);
-    if (literal == "**"){
+    if (literal == "**") {
       return std::pow(left, right);
     } else if (literal == "*") {
       return left * right;
-    } else if (literal == "/"){
-      if (right == 0){
+    } else if (literal == "/") {
+      if (right == 0) {
         throw std::runtime_error("Division by zero");
       }
       return left / right;
-    } else if (literal == "%"){
-      if (right == 0){
+    } else if (literal == "%") {
+      if (right == 0) {
         throw std::runtime_error("Modulus by zero");
       }
       return static_cast<int>(left) % static_cast<int>(right);
-    } else if (literal == "+"){
+    } else if (literal == "+") {
       return left + right;
-    } else if (literal == "-"){
+    } else if (literal == "-") {
       return left - right;
-    } else if (literal == "<"){
+    } else if (literal == "<") {
       return left < right;
-    } else if (literal == ">"){
+    } else if (literal == ">") {
       return left > right;
-    } else if (literal == "<="){
+    } else if (literal == "<=") {
       return left <= right;
     } else if (literal == ">=") {
       return left >= right;
-    } else if (literal == "=="){
+    } else if (literal == "==") {
       return left == right;
-    } else if (literal == "!="){
+    } else if (literal == "!=") {
       return left != right;
     } else {
       std::string message = "Tried to run unknown operator ";
@@ -217,14 +218,14 @@ public:
       throw std::runtime_error(message);
     }
   }
-  void RunWhile(SymbolTable & symbols){
+  void RunWhile(SymbolTable &symbols) {
     assert(children.size() == 2);
     assert(value == double{});
     assert(literal == std::string{});
 
     ASTNode condition = children[0];
     ASTNode body = children[1];
-    while (condition.RunExpect(symbols)){
+    while (condition.RunExpect(symbols)) {
       body.Run(symbols);
     }
   }
