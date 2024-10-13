@@ -126,6 +126,18 @@ private:
     return lhs;
   }
 
+  ASTNode ParseEquals(){
+    ASTNode lhs = ParseCompare();
+    
+  }
+
+  ASTNode ParseCompare(){
+    ASTNode lhs = ParseAddSub();
+    std::string operation = ExpectToken(Lexer::ID_COMPARE).lexeme;
+    ASTNode rhs = ParseAddSub();
+    return ASTNode(ASTNode::OPERATION, operation, lhs, rhs);
+  }
+
   ASTNode ParseAddSub(){
     ASTNode lhs = ParseMulDivMod();
     while (CurToken().lexeme == "+" || CurToken().lexeme == "-"){
