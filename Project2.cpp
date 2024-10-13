@@ -83,7 +83,7 @@ private:
 
     return out;
   }
-
+/*
   ASTNode ParseAssign() {
     Token new_id = ExpectToken(Lexer::ID_ID);
     ExpectToken(Lexer::ID_ASSIGN);
@@ -94,8 +94,11 @@ private:
     ExpectToken(Lexer::ID_ENDLINE);
     return node;
   }
+  */
 
   ASTNode ParseExpr() {
+    return ParseAssign();
+    //Everything below is now obsolete, but I'm leaving it in for now. 
     // stub expression handler for now, only works for literals and idents
     if (auto token = IfToken(Lexer::ID_NUMBER)) {
       return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
@@ -107,6 +110,73 @@ private:
     }
 
     ErrorUnexpected(CurToken(), Lexer::ID_ID, Lexer::ID_NUMBER);
+  }
+
+  ASTNode ParseAssign(){
+    ASTNode lhs = ParseAddSub();
+    if (CurToken().lexeme == "="){
+      //can only have variable names as the LHS of an assignment
+      if (lhs.type != ASTNode::IDENTIFIER){
+        ErrorUnexpected(CurToken(), Lexer::ID_ID);
+      }
+      ExpectToken(Lexer::ID_ASSIGN);
+      ASTNode rhs = ParseAssign();
+      return ASTNode(ASTNode::ASSIGN, "=", lhs, rhs);
+    }
+    return lhs;
+  }
+
+  ASTNode ParseAddSub(){
+    ASTNode lhs = ParseMulDivMod();
+    while (CurToken().lexeme == "+" || CurToken().lexeme == "-"){
+      std::string operation = ConsumeToken().lexeme; 
+      ASTNode rhs = ParseMulDivMod();
+      lhs = ASTNode(ASTNode::OPERATION, operation, lhs, rhs);
+      
+    }
+    return lhs;
+  }
+
+  ASTNode ParseMulDivMod(){
+    ASTNode lhs = ParseExponentiation();
+    while (CurToken().lexeme == "*" || CurToken().lexeme == "/" || CurToken().lexeme == "%"){
+      std::string operation = ConsumeToken().lexeme; 
+      ASTNode rhs = ParseExponentiation();
+      lhs = ASTNode(ASTNode::OPERATION, operation, lhs, rhs);
+      
+    }
+    return lhs;
+  }
+
+  ASTNode ParseExponentiation(){
+    ASTNode lhs = ParseTerm();
+    if (CurToken().lexeme == "**"){
+      ConsumeToken();
+      ASTNode rhs = ParseExponentiation();
+      return ASTNode(ASTNode::OPERATION, "**", lhs, rhs);
+    }
+    return lhs;
+  }
+
+  ASTNode ParseTerm(){
+    Token const & current = CurToken();
+    switch (current){ 
+      case Lexer::ID_NUMBER:
+        return ASTNode(ASTNode::NUMBER, std::stod(ConsumeToken().lexeme));
+      case Lexer::ID_ID:
+        return ASTNode(ASTNode::IDENTIFIER, 
+                       table.FindVar(ConsumeToken().lexeme, current.line_id), &current);
+      case Lexer::ID_OPEN_PARENTHESIS:
+      {
+        ExpectToken(Lexer::ID_OPEN_PARENTHESIS);
+        ASTNode subexpression = ParseExpr();
+        ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+        return subexpression;
+      }
+      default:
+        ErrorUnexpected(current);
+    }
+    return ASTNode{};
   }
 
   ASTNode ParsePrint() {
@@ -142,7 +212,7 @@ private:
         }
       }
     } else {
-      node.AddChild(ParseExpr());
+      node.AddChild(ParseExpr()); // NOTE TO SELF - CHANGE THIS BACK LATER
     }
     ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
     ExpectToken(Lexer::ID_ENDLINE);
@@ -198,13 +268,16 @@ private:
     case Lexer::ID_VAR:
       return ParseDecl();
     case Lexer::ID_ID:
-      return ParseAssign();
+      return ParseExpr();
     case Lexer::ID_PRINT:
       return ParsePrint();
     case Lexer::ID_IF:
       return ParseIF();
     case Lexer::ID_WHILE:
       return ParseWhile();
+    //stub code, will remove later
+    case Lexer::ID_NUMBER:
+      return ParseAddSub();
     default:
       ErrorUnexpected(current);
     }

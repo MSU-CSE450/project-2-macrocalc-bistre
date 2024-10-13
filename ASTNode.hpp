@@ -26,7 +26,8 @@ public:
     WHILE,
     STRING
   };
-  const Type type;
+  //NOTE TO SELF- MAKE CONST 
+  Type type;
   double value{};
   size_t var_id{};
   // can also serve as an operation name if of type OPERATION. Might also
@@ -39,6 +40,10 @@ public:
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
+  ASTNode (Type type, std::string literal, ASTNode left_child, ASTNode right_child)
+  : type(type), literal(literal){
+    AddChildren(left_child, right_child);
+  }
 
   operator int() const { return type; }
 
@@ -55,6 +60,8 @@ public:
   }
 
   template <typename T> void AddChildren(T node) { AddChild(node); }
+
+
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
@@ -160,7 +167,7 @@ public:
     if (literal == "!"){
       return left == 0 ? 1 : 0;
     }
-    if (literal == "-"){
+    if (literal == "-" && children.size() == 1){
       return -1 * left;
     }
     assert(children.size() == 2);
