@@ -185,6 +185,11 @@ private:
     return ASTNode(ASTNode::OPERATION, "*", std::move(*lhs), std::move(rhs));
   }
 
+  ASTNode ParseNOT(){
+    auto rhs = ParseTerm();
+    return ASTNode(ASTNode::OPERATION, "!", std::move(rhs));
+  }
+
   ASTNode ParseTerm() {
     Token const &current = CurToken();
     switch (current) {
@@ -206,6 +211,9 @@ private:
         return ParseNegate();
       }
       ErrorUnexpected(current);
+    case Lexer::ID_NOT:
+      ConsumeToken();
+      return ParseNOT();
     default:
       ErrorUnexpected(current);
     }
