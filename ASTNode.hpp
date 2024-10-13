@@ -26,8 +26,7 @@ public:
     WHILE,
     STRING
   };
-  // NOTE TO SELF- MAKE CONST
-  Type type;
+  Type const type;
   double value{};
   size_t var_id{};
   // can also serve as an operation name if of type OPERATION. Might also
@@ -35,32 +34,39 @@ public:
   std::string literal{};
   Token const *token = nullptr; // for error reporting
 
+  // ASTNode copies are expensive, so only allow moves
+  ASTNode(ASTNode &) = delete;
+  ASTNode(ASTNode &&) = default;
+
   ASTNode(Type type = EMPTY) : type(type) {};
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
-  ASTNode(Type type, std::string literal, ASTNode left_child,
-          ASTNode right_child)
+  ASTNode(Type type, std::string literal, ASTNode &&left_child,
+          ASTNode &&right_child)
       : type(type), literal(literal) {
-    AddChildren(left_child, right_child);
+    AddChildren(std::forward<ASTNode>(left_child),
+                std::forward<ASTNode>(right_child));
   }
 
   operator int() const { return type; }
 
-  void AddChild(ASTNode node) {
+  void AddChild(ASTNode &&node) {
     if (node) {
-      children.push_back(node);
+      children.push_back(std::forward<ASTNode>(node));
     }
   }
 
   template <typename T, typename... Rest>
   void AddChildren(T node, Rest... rest) {
-    AddChild(node);
-    AddChildren(rest...);
+    AddChild(std::forward<T>(node));
+    AddChildren(std::forward<Rest...>(rest...));
   }
 
-  template <typename T> void AddChildren(T node) { AddChild(node); }
+  template <typename T> void AddChildren(T node) {
+    AddChild(std::forward<T>(node));
+  }
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
@@ -107,7 +113,7 @@ public:
     // push a new scope
     // run each child node in order
     // pop scope
-    for (ASTNode child : children) {
+    for (ASTNode &child : children) {
       child.Run(symbols);
     }
   }
@@ -116,7 +122,7 @@ public:
     // if child is an expression or number, run it and print the value it
     // returns if it's a string literal, print it need to do something about
     // identifiers in curly braces
-    for (ASTNode child : children) {
+    for (ASTNode &child : children) {
       if (child.type == ASTNode::STRING) {
         std::cout << child.literal;
       } else {
@@ -223,8 +229,8 @@ public:
     assert(value == double{});
     assert(literal == std::string{});
 
-    ASTNode condition = children[0];
-    ASTNode body = children[1];
+    ASTNode &condition = children[0];
+    ASTNode &body = children[1];
     while (condition.RunExpect(symbols)) {
       body.Run(symbols);
     }
