@@ -24,7 +24,19 @@ public:
     OPERATION,
     NUMBER,
     WHILE,
-    STRING
+    STRING,
+    EQ,
+    NEQ,
+    GEQ,
+    LEQ,
+    GREATERTHAN,
+    LESSTHAN,
+    ADD,
+    SUB,
+    MUL,
+    DIVIDE,
+    MOD,
+    EXP
   };
   const Type type;
   double value{};

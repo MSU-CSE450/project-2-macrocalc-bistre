@@ -101,7 +101,8 @@ private:
     //   return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
     // }
 
-    // if (auto token = IfToken(Lexer::ID_ID)) {
+    // if (auto token = IfToken(Lexer::ID_ID)) {//
+
     //   return ASTNode(ASTNode::IDENTIFIER,
     //                  table.FindVar(token->lexeme, token->line_id), token);
     // }
@@ -112,6 +113,7 @@ private:
 
   ASTNode ParseEqalSign(){
     ASTNode lhs = ParseExpressionOr();
+
     if (IfToken('=')) {
       ASTNode rhs = ParseEqalSign();  // Right associative.
       return ASTNode(ASTNode::ASSIGN, lhs, rhs);
@@ -129,7 +131,137 @@ private:
   }
 
   ASTNode ParseExpressionAnd() {
-    ASTNode lhs = ParseExpressionAnd();
+    ASTNode lhs = ParseEquality();
+    if (IfToken('&&')) {
+      ASTNode rhs = ParseExpressionAnd();
+      return ASTNode(ASTNode::ASSIGN, lhs, rhs);
+    }
+    return lhs;
+  }
+
+  ASTNode ParseEquality() {
+    ASTNode lhs = ParseExpressionComparison();
+
+    if (IfToken('==')) {
+      ASTNode rhs = ParseExpressionAnd();
+      return ASTNode(ASTNode::EQ, lhs, rhs);
+    } else if (IfToken('!=')) {
+      ASTNode rhs = ParseExpressionAnd();
+      return ASTNode(ASTNode::NEQ, lhs, rhs);
+    }
+    
+
+    return ASTNode{};
+  }
+
+  ASTNode ParseExpressionComparison() {
+    ASTNode lhs = ParseExpressionAddSub();
+
+    Token token = CurToken();
+    ConsumeToken();
+
+    switch (token) {
+    case '>=': {
+      ASTNode rhs = ParseExpressionAddSub();
+      return ASTNode(ASTNode::GEQ, lhs, rhs);
+    }
+    case '<=': {
+      ASTNode rhs = ParseExpressionAddSub();
+      return ASTNode(ASTNode::LEQ, lhs, rhs);
+    }
+
+    case '>':{
+      ASTNode rhs = ParseExpressionAddSub();
+      return ASTNode(ASTNode::GREATERTHAN, lhs, rhs);
+    }
+
+    case '<':{
+      ASTNode rhs = ParseExpressionAddSub();
+      return ASTNode(ASTNode::LESSTHAN, lhs, rhs);
+    }
+    }
+
+    return ASTNode{};
+  }
+
+  ASTNode ParseExpressionAddSub() {
+    ASTNode lhs = ParseMulDivMod();
+
+    return ParseExpressionAddSubPrime(lhs);
+  }
+
+  ASTNode ParseExpressionAddSubPrime(ASTNode lhs){
+    
+    while (CurToken() == '+' || CurToken() == '-') {
+      if (IfToken('+')) {
+        ASTNode lhs(ASTNode::ADD, lhs);
+      } else if (IfToken('-')) {
+        ASTNode lhs(ASTNode::SUB, lhs);
+      }
+
+      ASTNode rhs = ParseMulDivMod();
+
+      lhs.AddChild(rhs);
+    }
+
+    return lhs;
+  }
+
+  ASTNode ParseMulDivMod(){
+    ASTNode lhs = ParseExponent();
+
+    return ParseMulDivModPrime(lhs);
+  }
+
+  ASTNode ParseMulDivModPrime(ASTNode lhs){
+    while (CurToken() == '*' || CurToken() == '/' || CurToken() == '%') {
+      if (IfToken('*')) {
+        ASTNode lhs(ASTNode::MUL, lhs);
+      } else if (IfToken('/')) {
+        ASTNode lhs(ASTNode::DIVIDE, lhs);
+      } else if (IfToken('%')) {
+        ASTNode lhs(ASTNode::MOD, lhs);
+      }
+
+      ASTNode rhs = ParseExponent();
+
+      lhs.AddChild(rhs);
+    }
+
+    return lhs;
+  }
+
+  ASTNode ParseExponent(){
+    ASTNode lhs = ParseTERM();
+
+    if (IfToken('**')){
+      ASTNode rhs = ParseExponent();
+      return ASTNode(ASTNode::EXP, lhs, rhs);
+    }
+
+    return ASTNode{};
+  }
+
+  ASTNode ParseTERM(){
+    auto token = ConsumeToken();
+
+    switch (token) {
+    case Lexer::ID_ID:       // Variable
+      break;
+    case Lexer::ID_NUMBER: 
+      break;
+    case Lexer::ID_STRING: 
+      break;
+    case '(': {
+      ASTNode out_node = ParseExpr();
+      ExpectToken(')');
+      return out_node;
+    }
+    default:
+      break;
+    }
+
+    return ASTNode{};
   }
 
   ASTNode ParsePrint() {
