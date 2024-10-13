@@ -85,98 +85,77 @@ private:
 
     return out;
   }
-  /*
-    ASTNode ParseAssign() {
-      Token new_id = ExpectToken(Lexer::ID_ID);
+
+  ASTNode ParseExpr() { return ParseAssign(); }
+
+  ASTNode ParseAssign() {
+    ASTNode lhs = ParseOr();
+    if (CurToken().lexeme == "=") {
+      // can only have variable names as the LHS of an assignment
+      if (lhs.type != ASTNode::IDENTIFIER) {
+        ErrorUnexpected(CurToken(), Lexer::ID_ID);
+      }
       ExpectToken(Lexer::ID_ASSIGN);
-      ASTNode node = ASTNode{ASTNode::ASSIGN};
-      size_t var_id = table.FindVar(new_id.lexeme, new_id.line_id);
-      node.AddChildren(ASTNode(ASTNode::IDENTIFIER, var_id, &new_id),
-                       ParseExpr());
-      ExpectToken(Lexer::ID_ENDLINE);
-      return node;
+      ASTNode rhs = ParseAssign();
+      return ASTNode(ASTNode::ASSIGN, "=", std::move(lhs), std::move(rhs));
     }
-    */
-
-  ASTNode ParseExpr() {
-    // return ParseAssign();
-    // Everything below is now obsolete, but I'm leaving it in for now.
-    //  stub expression handler for now, only works for literals and idents
-    if (auto token = IfToken(Lexer::ID_NUMBER)) {
-      return ASTNode(ASTNode::NUMBER, std::stod(token->lexeme));
-    }
-
-    if (auto token = IfToken(Lexer::ID_ID)) {
-      return ASTNode(ASTNode::IDENTIFIER,
-                     table.FindVar(token->lexeme, token->line_id), token);
-    }
-
-    ErrorUnexpected(CurToken(), Lexer::ID_ID, Lexer::ID_NUMBER);
+    return lhs;
   }
 
-  // ASTNode ParseAssign() {
-  //   ASTNode lhs = ParseOr();
-  //   if (CurToken().lexeme == "=") {
-  //     // can only have variable names as the LHS of an assignment
-  //     if (lhs.type != ASTNode::IDENTIFIER) {
-  //       ErrorUnexpected(CurToken(), Lexer::ID_ID);
-  //     }
-  //     ExpectToken(Lexer::ID_ASSIGN);
-  //     ASTNode rhs = ParseAssign();
-  //     return ASTNode(ASTNode::ASSIGN, "=", lhs, rhs);
-  //   }
-  //   return lhs;
-  // }
+  ASTNode ParseOr() {
+    auto lhs = std::make_unique<ASTNode>(ParseAnd());
+    while (CurToken().lexeme == "||") {
+      ConsumeToken();
+      ASTNode rhs = ParseAnd();
+      lhs = std::make_unique<ASTNode>(
+          ASTNode(ASTNode::OPERATION, "||", std::move(*lhs), std::move(rhs)));
+    }
+    return ASTNode{std::move(*lhs)};
+  }
 
-  // ASTNode ParseOr() {
-  //   ASTNode lhs = ParseAnd();
-  //   while (CurToken().lexeme == "||") {
-  //     ConsumeToken();
-  //     ASTNode rhs = ParseAnd();
-  //     lhs = ASTNode(ASTNode::OPERATION, "||", lhs, rhs);
-  //   }
-  //   return lhs;
-  // }
+  ASTNode ParseAnd() {
+    auto lhs = std::make_unique<ASTNode>(ParseEquals());
+    while (CurToken().lexeme == "&&") {
+      ConsumeToken();
+      ASTNode rhs = ParseEquals();
+      lhs = std::make_unique<ASTNode>(
+          ASTNode(ASTNode::OPERATION, "&&", std::move(*lhs), std::move(rhs)));
+    }
+    return ASTNode{std::move(*lhs)};
+  }
 
-  // ASTNode ParseAnd() {
-  //   ASTNode lhs = ParseEquals();
-  //   while (CurToken().lexeme == "&&") {
-  //     ConsumeToken();
-  //     ASTNode rhs = ParseEquals();
-  //     lhs = ASTNode(ASTNode::OPERATION, "&&", lhs, rhs);
-  //   }
-  //   return lhs;
-  // }
+  ASTNode ParseEquals() {
+    auto lhs = std::make_unique<ASTNode>(ParseCompare());
+    if (CurToken() == Lexer::ID_EQUALS) {
+      std::string operation = ExpectToken(Lexer::ID_EQUALS).lexeme;
+      ASTNode rhs = ParseCompare();
+      return ASTNode(ASTNode::OPERATION, operation, std::move(*lhs),
+                     std::move(rhs));
+    }
+    return ASTNode{std::move(*lhs)};
+  }
 
-  // ASTNode ParseEquals() {
-  //   ASTNode lhs = ParseCompare();
-  //   if (CurToken() == Lexer::ID_EQUALS) {
-  //     std::string operation = ExpectToken(Lexer::ID_EQUALS).lexeme;
-  //     ASTNode rhs = ParseCompare();
-  //     return ASTNode(ASTNode::OPERATION, operation, lhs, rhs);
-  //   }
-  //   return lhs;
-  // }
+  ASTNode ParseCompare() {
+    auto lhs = std::make_unique<ASTNode>(ParseAddSub());
+    if (CurToken() == Lexer::ID_COMPARE) {
+      std::string operation = ExpectToken(Lexer::ID_COMPARE).lexeme;
+      ASTNode rhs = ParseAddSub();
+      return ASTNode(ASTNode::OPERATION, operation, std::move(*lhs),
+                     std::move(rhs));
+    }
+    return ASTNode{std::move(*lhs)};
+  }
 
-  // ASTNode ParseCompare() {
-  //   ASTNode lhs = ParseAddSub();
-  //   if (CurToken() == Lexer::ID_COMPARE) {
-  //     std::string operation = ExpectToken(Lexer::ID_COMPARE).lexeme;
-  //     ASTNode rhs = ParseAddSub();
-  //     return ASTNode(ASTNode::OPERATION, operation, lhs, rhs);
-  //   }
-  //   return lhs;
-  // }
-
-  // ASTNode ParseAddSub() {
-  //   ASTNode lhs = ParseMulDivMod();
-  //   while (CurToken().lexeme == "+" || CurToken().lexeme == "-") {
-  //     std::string operation = ConsumeToken().lexeme;
-  //     ASTNode rhs = ParseMulDivMod();
-  //     lhs = ASTNode(ASTNode::OPERATION, operation, std::move(lhs), rhs);
-  //   }
-  //   return lhs;
-  // }
+  ASTNode ParseAddSub() {
+    auto lhs = std::make_unique<ASTNode>(ParseMulDivMod());
+    while (CurToken().lexeme == "+" || CurToken().lexeme == "-") {
+      std::string operation = ConsumeToken().lexeme;
+      ASTNode rhs = ParseMulDivMod();
+      lhs = std::make_unique<ASTNode>(ASTNode(ASTNode::OPERATION, operation,
+                                              std::move(*lhs), std::move(rhs)));
+    }
+    return ASTNode{std::move(*lhs)};
+  }
 
   ASTNode ParseMulDivMod() {
     auto lhs = std::make_unique<ASTNode>(ParseExponentiation());
