@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "Error.hpp"
 #include "SymbolTable.hpp"
 class ASTNode {
 
@@ -194,12 +195,12 @@ public:
       return left * right;
     } else if (literal == "/") {
       if (right == 0) {
-        throw std::runtime_error("Division by zero");
+        ErrorNoLine("Division by zero");
       }
       return left / right;
     } else if (literal == "%") {
       if (right == 0) {
-        throw std::runtime_error("Modulus by zero");
+        ErrorNoLine("Modulus by zero");
       }
       return static_cast<int>(left) % static_cast<int>(right);
     } else if (literal == "+") {
