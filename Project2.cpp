@@ -44,7 +44,7 @@ private:
 
   // rose: C++ optionals can't hold references, grumble grumble
   Token const *IfToken(int token) {
-    if (CurToken() == token) {
+    if (token_idx < tokens.size() && CurToken() == token) {
       return &ConsumeToken();
     }
     return nullptr;
