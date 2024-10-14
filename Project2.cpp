@@ -290,6 +290,11 @@ private:
     node.AddChild(ParseExpr());
 
     ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
+
+    if (IfToken(Lexer::ID_ENDLINE)){
+      return node;
+    }
+
     node.AddChild(ParseStatement());
     return node;
   }

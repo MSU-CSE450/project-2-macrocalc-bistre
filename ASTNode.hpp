@@ -153,8 +153,8 @@ public:
     assert(children.size() == 2 || children.size() == 3);
 
     double condition = children[0].RunExpect(symbols);
-
-    if (condition != 0) {
+    if (condition != 0)
+    {
       children[1].Run(symbols);
       return;
     }
