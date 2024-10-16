@@ -253,7 +253,7 @@ private:
         }
       }
     } else {
-      node.AddChild(ParseExpr()); // NOTE TO SELF - CHANGE THIS BACK LATER
+      node.AddChild(ParseExpr()); 
     }
     ExpectToken(Lexer::ID_CLOSE_PARENTHESIS);
     ExpectToken(Lexer::ID_ENDLINE);
@@ -306,7 +306,8 @@ private:
       return ParseScope();
     case Lexer::ID_VAR:
       return ParseDecl();
-    case Lexer::ID_ID: {
+    case Lexer::ID_ID: 
+    case Lexer::ID_NUMBER: {
       ASTNode node = ParseExpr();
       ExpectToken(Lexer::ID_ENDLINE);
       return node;
@@ -317,12 +318,6 @@ private:
       return ParseIF();
     case Lexer::ID_WHILE:
       return ParseWhile();
-    // stub code, will remove later
-    case Lexer::ID_NUMBER: {
-      ASTNode node = ParseExpr();
-      ExpectToken(Lexer::ID_ENDLINE);
-      return node;
-    }
     default:
       ErrorUnexpected(current);
     }
