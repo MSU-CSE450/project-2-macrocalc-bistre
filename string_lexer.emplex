@@ -1,0 +1,3 @@
+IDENTIFIER {[^\}\n]+}
+ESCAPE_CHAR "\\\""|"\\{"|"\\\\"|"\\n"|"\\t"
+LITERAL .

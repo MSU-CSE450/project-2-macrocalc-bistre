@@ -1,0 +1,34 @@
+# TODO(rose) add unary operators
+
+S → SCOPE | IF | LOOP | SEMI ’;’
+SEMI → DECL | PRINT | EXPR
+SCOPE → ’{’ S ’}’
+DECL → var ident DECL’
+DECL’ → ’=’ EXPR | ε
+COND → ’(’ EXPR ’)’
+IF → if COND S ELSE
+ELSE → else S | ε
+LOOP → while COND S
+PRINT → print ’(’ PRINT_ARG ’)’
+PRINT_ARG → EXPR | literal_str
+
+EXPR → EXPR8
+EXPR8 → EXPR7 | ident ’=’ EXPR8
+EXPR7 → EXPR6 | EXPR7 or EXPR6
+EXPR6 → EXPR5 | EXPR6 and EXPR5
+
+EXPR5 → EXPR4 EXPR5’
+EXPR5’ → ε | neq EXPR4 | eq EXPR4
+
+EXPR4 → EXPR3 EXPR4’
+EXPR4’ → ε | geq EXPR3 | leq EXPR3 | ’>’ EXPR3 | ’<’ EXPR3
+
+EXPR3 → EXPR2 | EXPR3 EXPR3’
+EXPR3’ → ’+’ EXPR2 | ’-’ EXPR2
+
+EXPR2 → EXPR1 | EXPR2 EXPR2’
+EXPR2’ → ’*’ EXPR1 | ’/’ EXPR1 | ’%’ EXPR1
+
+EXPR1 → TERM EXPR1’
+EXPR1’ → ε | exp EXPR1
+TERM → ident | ’(’ EXPR ’)’ | literal_num

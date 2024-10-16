@@ -33,7 +33,7 @@ tests: $(PROJECT)
 .PHONY: tests
 
 # List any files here that should trigger full recompilation when they change.
-KEY_FILES := 
+KEY_FILES := ASTNode.hpp SymbolTable.hpp Error.hpp
 
 $(PROJECT):	$(PROJECT).cpp $(KEY_FILES)
 	$(CXX) $(CFLAGS) $(PROJECT).cpp -o $(PROJECT)
