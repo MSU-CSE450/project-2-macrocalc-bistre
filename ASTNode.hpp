@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "Error.hpp"
 #include "SymbolTable.hpp"
 class ASTNode {
 
@@ -26,7 +27,7 @@ public:
     WHILE,
     STRING
   };
-  const Type type;
+  Type const type;
   double value{};
   size_t var_id{};
   // can also serve as an operation name if of type OPERATION. Might also
@@ -34,27 +35,39 @@ public:
   std::string literal{};
   Token const *token = nullptr; // for error reporting
 
+  // ASTNode copies are expensive, so only allow moves
+  ASTNode(ASTNode &) = delete;
+  ASTNode(ASTNode &&) = default;
+
   ASTNode(Type type = EMPTY) : type(type) {};
   ASTNode(Type type, std::string literal) : type(type), literal(literal) {};
   ASTNode(Type type, double value) : type(type), value(value) {};
   ASTNode(Type type, size_t var_id, Token const *token)
       : type(type), var_id(var_id), token(token) {};
 
+  template <typename... Ts>
+  ASTNode(Type type, std::string literal, Ts &&...children)
+      : type(type), literal(literal) {
+    AddChildren(std::forward<Ts>(children)...);
+  }
+
   operator int() const { return type; }
 
-  void AddChild(ASTNode node) {
+  void AddChild(ASTNode &&node) {
     if (node) {
-      children.push_back(node);
+      children.push_back(std::forward<ASTNode>(node));
     }
   }
 
   template <typename T, typename... Rest>
   void AddChildren(T node, Rest... rest) {
-    AddChild(node);
-    AddChildren(rest...);
+    AddChild(std::forward<T>(node));
+    AddChildren(std::forward<Rest...>(rest...));
   }
 
-  template <typename T> void AddChildren(T node) { AddChild(node); }
+  template <typename T> void AddChildren(T node) {
+    AddChild(std::forward<T>(node));
+  }
 
   std::optional<double> Run(SymbolTable &symbols) {
     switch (type) {
@@ -67,8 +80,7 @@ public:
       RunPrint(symbols);
       return std::nullopt;
     case ASSIGN:
-      RunAssign(symbols);
-      return std::nullopt;
+      return RunAssign(symbols);
     case IDENTIFIER:
       return RunIdentifier(symbols);
     case CONDITIONAL:
@@ -102,7 +114,7 @@ public:
     // push a new scope
     // run each child node in order
     // pop scope
-    for (ASTNode child : children) {
+    for (ASTNode &child : children) {
       child.Run(symbols);
     }
   }
@@ -111,7 +123,7 @@ public:
     // if child is an expression or number, run it and print the value it
     // returns if it's a string literal, print it need to do something about
     // identifiers in curly braces
-    for (ASTNode child : children) {
+    for (ASTNode &child : children) {
       if (child.type == ASTNode::STRING) {
         std::cout << child.literal;
       } else {
@@ -120,9 +132,11 @@ public:
     }
     std::cout << std::endl;
   }
-  void RunAssign(SymbolTable &symbols) {
+  double RunAssign(SymbolTable &symbols) {
     assert(children.size() == 2);
-    symbols.SetValue(children.at(0).var_id, children.at(1).RunExpect(symbols));
+    double rvalue = children.at(1).RunExpect(symbols);
+    symbols.SetValue(children.at(0).var_id, rvalue);
+    return rvalue;
   }
   double RunIdentifier(SymbolTable &symbols) {
     assert(value == double{});
@@ -139,13 +153,13 @@ public:
     assert(children.size() == 2 || children.size() == 3);
 
     double condition = children[0].RunExpect(symbols);
-
-    if (condition != 0) {
+    if (condition != 0)
+    {
       children[1].Run(symbols);
       return;
     }
 
-    if (children.size() < 3){
+    if (children.size() < 3) {
       return;
     }
 
@@ -156,65 +170,69 @@ public:
     // in the "literal"?) and one or two children run the child or children,
     // apply the operator to the returned value(s), then return the result
     assert(children.size() >= 1);
-    double left = children[0].RunExpect(symbols);
-    if (literal == "!"){
+    double left = children.at(0).RunExpect(symbols);
+    if (literal == "!") {
       return left == 0 ? 1 : 0;
     }
-    if (literal == "-"){
+    if (literal == "-" && children.size() == 1) {
       return -1 * left;
     }
     assert(children.size() == 2);
-    if (literal == "&&"){
-      if (!left) return 0; //short-circuit when left is false
+    if (literal == "&&") {
+      if (!left)
+        return 0; // short-circuit when left is false
       return children[1].RunExpect(symbols) != 0;
-    } else if (literal == "||"){
-      if (left) return 1; //short-circuit when left is true
+    } else if (literal == "||") {
+      if (left)
+        return 1; // short-circuit when left is true
       return children[1].RunExpect(symbols) != 0;
     }
-    //don't evaluate the right until you know you won't have to short-circuit
-    double right = children[1].RunExpect(symbols);
-    if (literal == "**"){
+    // don't evaluate the right until you know you won't have to short-circuit
+    double right = children.at(1).RunExpect(symbols);
+    if (literal == "**") {
       return std::pow(left, right);
     } else if (literal == "*") {
       return left * right;
-    } else if (literal == "/"){
-      if (right == 0){
-        throw std::runtime_error("Division by zero");
+    } else if (literal == "/") {
+      if (right == 0) {
+        ErrorNoLine("Division by zero");
       }
       return left / right;
-    } else if (literal == "%"){
-      if (right == 0){
-        throw std::runtime_error("Modulus by zero");
+    } else if (literal == "%") {
+      if (right == 0) {
+        ErrorNoLine("Modulus by zero");
       }
       return static_cast<int>(left) % static_cast<int>(right);
-    } else if (literal == "+"){
+    } else if (literal == "+") {
       return left + right;
-    } else if (literal == "-"){
+    } else if (literal == "-") {
       return left - right;
-    } else if (literal == "<"){
+    } else if (literal == "<") {
       return left < right;
-    } else if (literal == ">"){
+    } else if (literal == ">") {
       return left > right;
-    } else if (literal == "<="){
+    } else if (literal == "<=") {
       return left <= right;
     } else if (literal == ">=") {
       return left >= right;
-    } else if (literal == "=="){
+    } else if (literal == "==") {
       return left == right;
-    } else if (literal == "!="){
+    } else if (literal == "!=") {
       return left != right;
     } else {
-      throw std::runtime_error("Tried to run unknown operator");
+      std::string message = "Tried to run unknown operator ";
+      message.append(literal);
+      throw std::runtime_error(message);
     }
   }
-  void RunWhile(SymbolTable & symbols){
+  void RunWhile(SymbolTable &symbols) {
     assert(children.size() == 2);
     assert(value == double{});
     assert(literal == std::string{});
 
-    ASTNode condition = children[0];
-    ASTNode body = children[1];
-    while (condition.RunExpect(symbols)){
+    ASTNode &condition = children[0];
+    ASTNode &body = children[1];
+    while (condition.RunExpect(symbols)) {
       body.Run(symbols);
     }
   }
